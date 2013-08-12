@@ -1,0 +1,135 @@
+#include "pplinuxapi.h"
+
+#if (defined(LINUX))
+
+#include <unistd.h>
+#include <assert.h>
+#include <errno.h>
+#include "libcoro/coro.h"
+
+using namespace PPCool;
+
+CPPLinuxAPI::CPPLinuxAPI()
+{
+}
+
+CPPLinuxAPI::~CPPLinuxAPI()
+{
+}
+
+void CPPLinuxAPI::Sleep(unsigned int milliseconds)
+{
+	usleep(milliseconds * 1000);
+}
+
+void CPPLinuxAPI::InitLock(LockID & id)
+{
+	pthread_mutex_init(&id, 0);
+}
+
+void CPPLinuxAPI::DestroyLock(LockID & id)
+{
+	int rc = pthread_mutex_destroy(&id);
+	assert( rc != EBUSY );
+	assert( rc == 0 );
+}
+
+void CPPLinuxAPI::Lock(LockID & id)
+{
+	int rc = pthread_mutex_lock(&id);
+	assert( rc != EINVAL );
+	assert( rc != EDEADLK );
+	assert( rc == 0 );
+}
+
+void CPPLinuxAPI::Unlock(LockID & id)
+{
+	int rc = pthread_mutex_unlock(&id);
+	assert( rc != EINVAL );
+	assert( rc != EPERM );
+	assert( rc == 0 );
+}
+
+void CPPLinuxAPI::InitCondition(PPCondition & hCondition)
+{
+	int rc = pthread_cond_init(&hCondition, NULL);
+	assert( rc == 0 );
+}
+
+void CPPLinuxAPI::DestroyCondition(PPCondition & hCondition)
+{
+	if (pthread_cond_destroy(&hCondition) == EBUSY)
+	{
+		assert(0);
+	}
+}
+
+int CPPLinuxAPI::WaitCondition(PPCondition & hCondition, LockID & hLock, unsigned int TimeOut)
+{
+	struct timespec abstime;
+	abstime.tv_sec = TimeOut/1000;
+	abstime.tv_nsec = TimeOut%1000 * 1000000;
+	int rc = pthread_cond_timedwait(&hCondition, &hLock, &abstime);
+	assert( rc == 0 );
+}
+
+void CPPLinuxAPI::NotifyCondition(PPCondition & hCondition)
+{
+	int rc = pthread_cond_signal(&hCondition);
+	assert( rc == 0);
+}
+
+void CPPLinuxAPI::NotifyAllCondition(PPCondition & hCondition)
+{
+	pthread_cond_broadcast(&hCondition);
+}
+
+PPHANDLE CPPLinuxAPI::CreateThread(PFThreadProc pfThrdProc, void *pArg, BOOL)
+{
+	int hThread;
+	if(0 == pthread_create((pthread_t*)&hThread, NULL, pfThrdProc, pArg))
+	{
+		return hThread;
+	}
+	return PPINVALID_HANDLE;
+}
+
+void CPPLinuxAPI::JoinThread(PPHANDLE hThread, int)
+{
+	pthread_join(hThread, NULL);
+}
+
+void CPPLinuxAPI::TerminateThread(PPHANDLE hThread, unsigned long)
+{
+	pthread_cancel(hThread);
+}
+
+void CPPLinuxAPI::ResumeThread(PPHANDLE)
+{
+}
+
+void CPPLinuxAPI::SuspendThread(PPHANDLE)
+{
+}
+
+PPCoroContext CPPLinuxAPI::CreateCoroutine(unsigned int StackSize, PFCoroutineProc pfCoroProc, void * pParam)
+{
+	char* mem = new char[StackSize];
+	coro_context * pRealCoroContext = (coro_context*)mem;
+	coro_create(pRealCoroContext, pfCoroProc, (void*)pParam, (char*)pRealCoroContext + sizeof(coro_context), StackSize - sizeof(coro_context));
+	return (PPCoroContext)pRealCoroContext;
+}
+
+void CPPLinuxAPI::TerminateCoroutine(PPCoroContext hCoroContext)
+{
+	coro_destroy(hCoroContext);
+	char* mem = (char *)hCoroContext;
+	delete [] mem;
+}
+
+void CPPLinuxAPI::SwitchCoroutine(PPCoroContext hOldCoroContext, PPCoroContext hNewCoroContext)
+{
+	::coro_transfer(hOldCoroContext, hNewCoroContext);
+}
+
+#endif

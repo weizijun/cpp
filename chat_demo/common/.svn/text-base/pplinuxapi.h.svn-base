@@ -1,0 +1,54 @@
+#ifndef __PP_LINUX_API_H__
+#define __PP_LINUX_API_H__
+
+#if (defined(LINUX))
+
+#include "ppsystemapi.h"
+
+class CPPLinuxAPI : public PPCool::IPPSystemAPI
+{
+public:
+	CPPLinuxAPI();
+	~CPPLinuxAPI();
+
+public:
+	void Sleep(unsigned int milliseconds);
+
+	void InitLock(PPCool::LockID & id);
+
+	void DestroyLock(PPCool::LockID & id);
+
+	void Lock(PPCool::LockID & id);
+
+	void Unlock(PPCool::LockID & id);
+
+	void InitCondition(PPCool::PPCondition & hCondition);
+
+	void DestroyCondition(PPCool::PPCondition & hCondition);
+
+	int WaitCondition(PPCool::PPCondition & hCondition, PPCool::LockID & hLock, unsigned int TimeOut);
+
+	void NotifyCondition(PPCool::PPCondition & hCondition);
+
+	void NotifyAllCondition(PPCool::PPCondition & hCondition);
+
+	PPCool::PPHANDLE CreateThread(PPCool::PFThreadProc pfThrdProc, void *pArg, BOOL bSuspend);
+
+	void JoinThread(PPCool::PPHANDLE hThread, int);
+
+	void TerminateThread(PPCool::PPHANDLE hThread, unsigned long);
+
+	void ResumeThread(PPCool::PPHANDLE);
+
+	void SuspendThread(PPCool::PPHANDLE);
+
+	PPCool::PPCoroContext CreateCoroutine(unsigned int StackSize, PPCool::PFCoroutineProc pfCoroProc, void * pParam);
+
+	void TerminateCoroutine(PPCool::PPCoroContext hCoroContext);
+
+	void SwitchCoroutine(PPCool::PPCoroContext hOldCoroContext, PPCool::PPCoroContext hNewCoroContext);
+};
+
+#endif
+
+#endif
