@@ -1,0 +1,6 @@
+*.ncb
+*.suo
+*.sln
+Debug
+*.user
+/logger/logger/log
